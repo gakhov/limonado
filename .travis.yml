@@ -11,9 +11,13 @@ install:
   - make install
   - bin/pip3 install -r requirements-dev.txt
   - bin/pip3 install pytest-random-order
+  - bin/pip3 install python-coveralls
 
 script:
-  - PYTHONPATH=$PWD:$PYTHONPATH bin/py.test -m 'not ignore' --pep8 --random-order-bucket=global tests
+  - PYTHONPATH=$PWD:$PYTHONPATH bin/py.test -m 'not ignore' --pep8 --cov limonado --cov-report term-missing --random-order-bucket=global tests
 
 notifications:
   email: false
+
+after_success:
+  - bin/coveralls
