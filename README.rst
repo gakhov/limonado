@@ -97,3 +97,6 @@ source.
 
     $ bin/pip3 install -r requirements-dev.txt
     $ make tests
+
+
+.. |logo| image:: https://raw.githubusercontent.com/gakhov/limonado/master/docs/_static/logo.png
