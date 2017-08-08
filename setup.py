@@ -28,7 +28,7 @@ def setup_package():
         classifiers=[
             "Intended Audience :: Developers",
             "Operating System :: OS Independent",
-            "Topic :: Internet :: WWW/HTTP"
+            "Topic :: Internet :: WWW/HTTP",
             "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.3",
             "Programming Language :: Python :: 3.4",
