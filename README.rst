@@ -12,17 +12,25 @@ Limonado: Tornado API Tools
     :target: https://github.com/gakhov/limonado/releases
     :alt: Current Release Version
 
+
 .. image:: https://img.shields.io/pypi/v/limonado.svg?style=flat-square
     :target: https://pypi.python.org/pypi/limonado
     :alt: pypi Version
+
 
 .. image:: https://readthedocs.org/projects/pip/badge/?version=latest&style=flat-square
     :target: http://limonado.readthedocs.io/en/latest/
     :alt: Documentation Version
 
-.. image:: https://coveralls.io/repos/github/gakhov/limonado/badge.svg?branch=master
-   :target: https://coveralls.io/github/gakhov/limonado?branch=master&style=flat-squar
 
+.. image:: https://coveralls.io/repos/github/gakhov/limonado/badge.svg?branch=master&style=flat-square
+   :target: https://coveralls.io/github/gakhov/limonado?branch=master
+   :alt: Coverage
+
+
+.. image:: https://img.shields.io/pypi/pyversions/limonado.svg?style=flat-square
+    :target: https://github.com/gakhov/limonado
+    :alt: Python versions
 
 .. contents ::
 
