@@ -1,0 +1,5 @@
+jsonschema==2.5.1
+redis>=2.10,<2.11
+requests[security]>=2.10,<3.0
+strict_rfc3339==0.5
+tornado>=4.0,<5.0
