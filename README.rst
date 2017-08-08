@@ -1,9 +1,8 @@
+|logo|
+
 
 Limonado: Tornado API Tools
 ****************************
-
-|logo|
-
 
 .. image:: https://img.shields.io/travis/gakhov/limonado/master.svg?style=flat-square
     :target: https://travis-ci.org/gakhov/limonado
