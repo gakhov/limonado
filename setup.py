@@ -6,7 +6,7 @@ from distutils.core import setup
 def setup_package():
     root = os.path.abspath(os.path.dirname(__file__))
 
-    with open(os.path.join(root, 'pdsa', '__about__.py')) as f:
+    with open(os.path.join(root, 'limonado', '__about__.py')) as f:
         about = {}
         exec(f.read(), about)
 
