@@ -37,11 +37,13 @@ def setup_package():
         ],
         requires=[
             'jsonschema',
+            'python-dateutil',
             'strict_rfc3339',
             'tornado',
         ],
         install_requires=[
             'jsonschema==2.5.1',
+            'python-dateutil>=2.5,<2.6',
             'strict_rfc3339==0.5',
             'tornado>=4.0,<5.0'
         ]

@@ -2,8 +2,8 @@
 
 import argparse
 import collections
+import json
 
-import yaml
 
 __all__ = [
     "SettingsType",
@@ -15,11 +15,12 @@ __all__ = [
 def load_settings(path_or_str):
 
     def load():
-        if path_or_str.startswith("@"):
-            with open(path_or_str[1:], "rb") as handle:
-                return yaml.safe_load(handle)
+        """Load JSON from a string or path (starts with @)."""
+        if not path_or_str.startswith("@"):
+            return json.loads(path_or_str)
 
-        return yaml.safe_load(path_or_str)
+        with open(path_or_str[1:], "r") as handle:
+            return json.load(handle)
 
     settings = load()
     if not isinstance(settings, collections.Mapping):
@@ -72,9 +73,9 @@ class AppendSettingAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         name, raw_value = values
         try:
-            value = yaml.safe_load(raw_value)
-        except yaml.YAMLError:
-            raise argparse.ArgumentError(self, "value must be valid YAML")
+            value = json.loads(raw_value)
+        except ValueError:
+            raise argparse.ArgumentError(self, "value must be valid JSON")
 
         items = getattr(namespace, self.dest, None)
         if items is None:

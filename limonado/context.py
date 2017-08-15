@@ -2,8 +2,6 @@
 
 from copy import deepcopy
 
-import six
-
 DEFAULT_EXECUTOR = "default"
 
 
@@ -15,7 +13,7 @@ class Context(object):
             raise ValueError("missing '{}' executor".format(DEFAULT_EXECUTOR))
 
         self._executors = dict(executors)
-        for name, value in six.iteritems(kwargs):
+        for name, value in kwargs.items():
             setattr(self, name, value)
 
     @property
