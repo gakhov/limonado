@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .application import API
+from .application import WebAPI
 from .cli import run_cli
 from .endpoints import Endpoint
 from .exceptions import APIError
@@ -11,11 +11,11 @@ from .validation import validate_request
 from .validation import validate_response
 
 __all__ = [
-    "API",
     "APIError",
     "Endpoint",
     "EndpointHandler",
     "Health",
+    "WebAPI",
     "get_default_settings",
     "run_cli",
     "validate_request",

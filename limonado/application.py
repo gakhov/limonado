@@ -12,12 +12,12 @@ from .settings import get_default_settings
 from .utils import merge_defaults
 
 __all__ = [
-    "API",
+    "WebAPI",
     "Application"
 ]
 
 
-class API(object):
+class WebAPI(object):
 
     def __init__(self, settings=None, context=None, context_class=Context,
                  **tornado_settings):
