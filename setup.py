@@ -35,6 +35,16 @@ def setup_package():
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
         ],
+        requires=[
+            'jsonschema',
+            'strict_rfc3339',
+            'tornado',
+        ],
+        install_requires=[
+            'jsonschema==2.5.1',
+            'strict_rfc3339==0.5',
+            'tornado>=4.0,<5.0'
+        ]
     )
 
 
