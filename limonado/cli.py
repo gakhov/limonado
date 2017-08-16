@@ -1,37 +1,30 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-import argparse
+from argparse import Action
+from argparse import ArgumentError
+from argparse import ArgumentParser
+from argparse import ArgumentTypeError
+import collections
 import errno
+import json
 import logging
 import sys
 
 import tornado.ioloop
 
-from ._cli import AppendSettingAction
-from ._cli import SettingsType
-from ._cli import add_inline_settings
-
 __all__ = [
-    "run_cli",
+    "run_cli"
 ]
 
 log = logging.getLogger(__name__)
 
-arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument("--name")
-arg_parser.add_argument("--port", type=int)
-arg_parser.add_argument("--enable", action="append")
-arg_parser.add_argument("--disable", action="append")
-arg_parser.add_argument("--settings", type=SettingsType(), default={})
-arg_parser.add_argument("--set", dest="inline_settings",
-                        action=AppendSettingAction, default=[])
 
-
-def run_cli(api):
+def run_cli(api, loader=json.load):
+    arg_parser = _build_arg_parser(loader)
     args = arg_parser.parse_args()
     settings = args.settings
-    add_inline_settings(args.inline_settings, settings)
+    _add_inline_settings(args.inline_settings, settings)
     name = args.name or api.settings["name"]
     port = args.port or api.settings["port"]
     api.settings["name"] = name
@@ -51,3 +44,112 @@ def run_cli(api):
         raise
         log.exception("Failed to start server '%s' on port %i", name, port)
         sys.exit(errno.EINTR)
+
+
+def _build_arg_parser(loader):
+    parser = ArgumentParser()
+    parser.add_argument("--name")
+    parser.add_argument("--port", type=int)
+    parser.add_argument("--enable", action="append")
+    parser.add_argument("--disable", action="append")
+    parser.add_argument("--settings", type=_SettingsType(loader), default={})
+    parser.add_argument("--set", dest="inline_settings",
+                        action=_AppendSettingAction, default=[])
+    return parser
+
+
+def _add_inline_settings(inline_settings, settings):
+    for path, value in inline_settings:
+        keys = path.split(".")
+        current = settings
+        for key in keys[:-1]:
+            current = current.setdefault(key, {})
+
+        current[keys[-1]] = value
+
+
+def _parse_inline_value(string):
+    string = string.strip()
+    if _is_unqouted_string(string):
+        string = '"{}"'.format(string)
+
+    return json.loads(string)
+
+
+def _is_unqouted_string(string):
+    if (string.startswith(('"', "{", "[")) or
+            string in ("null", "true", "false")):
+        return False
+
+    for factory in (float, int):
+        try:
+            factory(string)
+        except ValueError:
+            pass
+        else:
+            return False
+
+    return True
+
+
+class _AppendSettingAction(Action):
+
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 default=None,
+                 required=False,
+                 help=None,
+                 metavar=None):
+        super(_AppendSettingAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=2,
+            default=default,
+            required=required,
+            help=help,
+            metavar=metavar)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        name, raw_value = values
+        try:
+            value = _parse_inline_value(raw_value)
+        except ValueError as error:
+            raise ArgumentError(self, "bad value: {}".format(error))
+
+        items = getattr(namespace, self.dest, None)
+        if items is None:
+            items = []
+
+        items.append((name, value))
+        setattr(namespace, self.dest, items)
+
+
+class _SettingsType(object):
+
+    def __init__(self, loader):
+        self.loader = loader
+
+    def __call__(self, path):
+        try:
+            handle = open(path)
+        except OSError:
+            raise ArgumentTypeError("can't open '{}'".format(path))
+        else:
+            settings = self._load(handle)
+            handle.close()
+            return settings
+
+    def _load(self, handle):
+        try:
+            settings = self.loader(handle)
+        except Exception as exc:
+            raise ArgumentTypeError("can't load settings: {}".format(exc))
+        else:
+            if not isinstance(settings, collections.Mapping):
+                raise ArgumentTypeError("settings must be a mapping")
+
+            return settings
+
+    def __repr__(self):
+        return "{}()".format(self.__class__.__name__)
