@@ -7,9 +7,9 @@ __all__ = [
 _ITEM_SEPARATORS = (None, " ", ",", "|")
 
 _CONVERTERS = {
-    "boolean": lambda v: v == "true" if v in ("true", "false") else v,
+    "boolean": lambda v: v == b"true" if v in (b"true", b"false") else v,
     "integer": int,
-    "null": lambda v: None if v == "null" else v,
+    "null": lambda v: None if v == b"null" else v,
     "number": float,
     "string": lambda v: v.decode("utf-8")
 }

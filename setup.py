@@ -15,7 +15,11 @@ def setup_package():
 
     setup(
         name="limonado",
-        packages=["limonado"],
+        packages=[
+            "limonado",
+            "limonado.utils",
+            "limonado.validation"
+        ],
         package_data={'': ['*.py']},
         description=about['__summary__'],
         long_description=readme,

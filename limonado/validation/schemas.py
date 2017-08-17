@@ -2,7 +2,8 @@
 
 __all__ = [
     "HEALTH",
-    "NO_PARAMS"
+    "NO_PARAMS",
+    "SETTINGS"
 ]
 
 HEALTH = {
@@ -54,4 +55,52 @@ HEALTH = {
 
 NO_PARAMS = {
     "additionalProperties": False
+}
+
+SETTINGS = {
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "version": {
+            "type": "string",
+            "minLength": 1
+        },
+        "deprecated_versions": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+        },
+        "server": {
+            "type": "string",
+            "minLength": 1
+        },
+        "threads": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+            },
+            "required": [
+                "default"
+            ]
+        }
+    },
+    "required": [
+        "name",
+        "version",
+        "deprecated_versions",
+        "server",
+        "threads"
+    ]
 }

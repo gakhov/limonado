@@ -3,7 +3,7 @@
 from functools import wraps
 
 from .exceptions import APIError
-from .utils import container
+from .utils.decorators import container
 
 __all__ = [
     "authenticated",

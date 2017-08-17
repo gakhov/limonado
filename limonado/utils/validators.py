@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*
 
-from .utils import parse_duration
+from .date import parse_duration
 
 __all__ = [
     "validate_duration"

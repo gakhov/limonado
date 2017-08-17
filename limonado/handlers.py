@@ -5,7 +5,7 @@ from tornado.gen import Return
 from tornado.gen import coroutine
 from tornado.web import RequestHandler
 
-from . import schema
+from .validation import schemas
 from .exceptions import APIError
 from .validation import validate_request
 from .validation import validate_response
@@ -81,7 +81,7 @@ class DeprecatedHandler(EndpointHandler):
 class HealthHandler(EndpointHandler):
 
     request_params_schema = None
-    response_schema = schema.HEALTH
+    response_schema = schemas.HEALTH
 
     @validate_request(params_schema=request_params_schema)
     @coroutine
