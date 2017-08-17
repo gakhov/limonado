@@ -12,14 +12,14 @@ __all__ = [
     "__version__",
 ]
 
-__version__ = '0.1.2'
+__version__ = "0.1.2"
 
 
 __summary__ = "Tornado API Tools"
 __keywords__ = "api, tornado, python"
-__uri__ = 'https://github.com/gakhov/limonado'
+__uri__ = "https://github.com/gakhov/limonado"
 
-__author__ = 'Andrii Gakhov'
-__email__ = 'andrii.gakhov@gmail.com'
+__author__ = "Andrii Gakhov"
+__email__ = "andrii.gakhov@gmail.com"
 
-__license__ = 'MIT'
+__license__ = "MIT"

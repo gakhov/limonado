@@ -6,11 +6,11 @@ from distutils.core import setup
 def setup_package():
     root = os.path.abspath(os.path.dirname(__file__))
 
-    with open(os.path.join(root, 'limonado', '__about__.py')) as f:
+    with open(os.path.join(root, "limonado", "__about__.py")) as f:
         about = {}
         exec(f.read(), about)
 
-    with open(os.path.join(root, 'README.rst')) as f:
+    with open(os.path.join(root, "README.rst")) as f:
         readme = f.read()
 
     setup(
@@ -20,15 +20,15 @@ def setup_package():
             "limonado.utils",
             "limonado.validation"
         ],
-        package_data={'': ['*.py']},
-        description=about['__summary__'],
+        package_data={"": ["*.py"]},
+        description=about["__summary__"],
         long_description=readme,
-        keywords=about['__keywords__'],
-        author=about['__author__'],
-        author_email=about['__email__'],
-        version=about['__version__'],
-        url=about['__uri__'],
-        license=about['__license__'],
+        keywords=about["__keywords__"],
+        author=about["__author__"],
+        author_email=about["__email__"],
+        version=about["__version__"],
+        url=about["__uri__"],
+        license=about["__license__"],
         classifiers=[
             "Intended Audience :: Developers",
             "Operating System :: OS Independent",
@@ -40,19 +40,19 @@ def setup_package():
             "Programming Language :: Python :: 3.6",
         ],
         requires=[
-            'jsonschema',
-            'dateutil',
-            'strict_rfc3339',
-            'tornado'
+            "jsonschema",
+            "dateutil",
+            "strict_rfc3339",
+            "tornado"
         ],
         install_requires=[
-            'jsonschema==2.5.1',
-            'python-dateutil>=2.5,<2.6',
-            'strict_rfc3339==0.5',
-            'tornado>=4.0,<5.0'
+            "jsonschema==2.5.1",
+            "python-dateutil>=2.5,<2.6",
+            "strict_rfc3339==0.5",
+            "tornado>=4.0,<5.0"
         ]
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup_package()
