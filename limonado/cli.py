@@ -23,33 +23,31 @@ log = logging.getLogger(__name__)
 def run_cli(api, loader=json.load):
     arg_parser = _build_arg_parser(loader)
     args = arg_parser.parse_args()
+    port = args.port
     settings = args.settings
     _add_inline_settings(args.inline_settings, settings)
-    name = args.name or api.settings["name"]
-    port = args.port or api.settings["port"]
-    api.settings["name"] = name
-    api.settings["port"] = port
     api.settings.update(settings)
     if args.disable:
         enable = api.endpoint_names - set(args.disable)
     else:
         enable = args.enable or None
 
-    log.info("Starting server '%s' on port %i", name, port)
+    log.info("Starting server '%s' on port %i", api.settings["id"], port)
     try:
         app = api.get_application(enable=enable)
         app.listen(port)
         tornado.ioloop.IOLoop.instance().start()
     except:
         raise
-        log.exception("Failed to start server '%s' on port %i", name, port)
+        log.exception("Failed to start server '%s' on port %i",
+                      api.settings["id"],
+                      port)
         sys.exit(errno.EINTR)
 
 
 def _build_arg_parser(loader):
     parser = ArgumentParser()
-    parser.add_argument("--name")
-    parser.add_argument("--port", type=int)
+    parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--enable", action="append")
     parser.add_argument("--disable", action="append")
     parser.add_argument("--settings", type=_SettingsType(loader), default={})

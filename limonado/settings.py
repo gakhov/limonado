@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import multiprocessing
+import uuid
 
 from .__about__ import __version__
 
@@ -12,8 +13,7 @@ __all__ = [
 def get_default_settings():
     return {
         "name": "Limonado",
-        "version": "1.0",
-        "port": "8000",
+        "id": uuid.uuid4().hex[:8],
         "version": "1.0",
         "deprecated_versions": [],
         "server": "Limonado/{}".format(__version__),

@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 
+import jsonschema
 from tornado.concurrent import futures
 import tornado.web
 
@@ -10,6 +11,7 @@ from .endpoints import RootEndpoint
 from .handlers import DeprecatedHandler
 from .settings import get_default_settings
 from .utils import merge_defaults
+from .validation import schemas
 
 __all__ = [
     "WebAPI",
@@ -69,6 +71,7 @@ class WebAPI(object):
         return self
 
     def get_application(self, enable=None):
+        self._validate_settings()
         handlers = self.tornado_settings.pop("handlers", [])
         self._add_endpoint_handlers(handlers, enable)
         return Application(self.settings, handlers=handlers,
@@ -88,6 +91,9 @@ class WebAPI(object):
                     endpoint,
                     self.settings["version"],
                     self.settings["deprecated_versions"]))
+
+    def _validate_settings(self):
+        jsonschema.validate(self.settings, schemas.SETTINGS)
 
 
 def _build_versioned_handlers(endpoint, active_version, deprecated_versions):
@@ -134,7 +140,7 @@ class Application(tornado.web.Application):
     def __init__(self, settings, **tornado_settings):
         super(Application, self).__init__(**tornado_settings)
         self.name = settings["name"]
-        self.port = settings["port"]
+        self.id = settings["id"]
         self.version = settings["version"]
         self.deprecated_versions = settings["deprecated_versions"]
         self.server = settings["server"]

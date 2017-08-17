@@ -64,6 +64,10 @@ SETTINGS = {
             "type": "string",
             "minLength": 1
         },
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
         "version": {
             "type": "string",
             "minLength": 1
@@ -83,13 +87,13 @@ SETTINGS = {
             "type": "object",
             "properties": {
                 "default": {
-                    "type": "string",
-                    "minLength": 1
+                    "type": "integer",
+                    "minimum": 1
                 }
             },
             "additionalProperties": {
-                "type": "string",
-                "minLength": 1
+                "type": "integer",
+                "minimum": 1
             },
             "required": [
                 "default"
@@ -98,6 +102,7 @@ SETTINGS = {
     },
     "required": [
         "name",
+        "id",
         "version",
         "deprecated_versions",
         "server",
