@@ -14,14 +14,14 @@ from .utils import merge_defaults
 from .validation import schemas
 
 __all__ = [
-    "WebAPI",
-    "Application"
+    "Application",
+    "WebAPI"
 ]
 
 
 class WebAPI(object):
 
-    def __init__(self, settings=None, context=None, context_class=Context,
+    def __init__(self, settings=None, context_class=Context,
                  **tornado_settings):
         if settings is None:
             self.settings = {}
@@ -29,13 +29,9 @@ class WebAPI(object):
             self.settings = deepcopy(settings)
 
         merge_defaults(get_default_settings(), self.settings)
-        self.tornado_settings = tornado_settings
-        if context is None:
-            self.context = {}
-        else:
-            self.context = deepcopy(context)
-
+        self.objects = {}
         self.context_class = context_class
+        self.tornado_settings = tornado_settings
         self._endpoints = {
             "": (RootEndpoint, {})
         }
@@ -80,7 +76,7 @@ class WebAPI(object):
     def _create_context(self):
         executors = {name: futures.ThreadPoolExecutor(threads)
                      for name, threads in self.settings["threads"].items()}
-        return self.context_class(self.settings, executors, **self.context)
+        return self.context_class(self.settings, executors, **self.objects)
 
     def _add_endpoint_handlers(self, handlers, enable):
         context = self._create_context()
