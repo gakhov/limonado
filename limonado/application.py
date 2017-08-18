@@ -93,7 +93,10 @@ class WebAPI(object):
                     self.settings["deprecated_versions"]))
 
     def _validate_settings(self):
-        jsonschema.validate(self.settings, schemas.SETTINGS)
+        try:
+            jsonschema.validate(self.settings, schemas.SETTINGS)
+        except jsonschema.ValidationError as error:
+            raise ValueError(error)
 
 
 def _build_versioned_handlers(endpoint, active_version, deprecated_versions):
