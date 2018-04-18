@@ -14,46 +14,66 @@ import sys
 import tornado.ioloop
 
 __all__ = [
+    "BaseCli",
     "run_cli"
 ]
 
 log = logging.getLogger(__name__)
 
 
-def run_cli(api, loader=json.load):
-    arg_parser = _build_arg_parser(loader)
-    args = arg_parser.parse_args()
-    port = args.port
-    settings = args.settings
-    _add_inline_settings(args.inline_settings, settings)
-    api.settings.update(settings)
-    if args.disable:
-        enable = api.endpoint_names - set(args.disable)
-    else:
-        enable = args.enable or None
+class BaseCli:
 
-    log.info("Starting server '%s' on port %i", api.settings["id"], port)
-    try:
-        app = api.get_application(enable=enable)
-        app.listen(port)
-        tornado.ioloop.IOLoop.instance().start()
-    except:
-        raise
-        log.exception("Failed to start server '%s' on port %i",
-                      api.settings["id"],
-                      port)
-        sys.exit(errno.EINTR)
+    def __init__(self, loader=json.load):
+        self.loader = loader
+
+    def add_arguments(self, parser):
+        pass
+
+    def create_api(self, args):
+        raise NotImplementedError
+
+    def run(self):
+        parser = self.create_parser()
+        args = parser.parse_args()
+        api = self.create_api(args)
+        settings = args.settings
+        _add_inline_settings(args.inline_settings, settings)
+        api.settings.update(settings)
+        if args.disable:
+            enable = api.endpoint_names - set(args.disable)
+        else:
+            enable = args.enable or None
+
+        port = args.port
+        log.info("Starting server '%s' on port %i", api.settings["id"], port)
+        try:
+            app = api.get_application(enable=enable)
+            app.listen(port)
+            tornado.ioloop.IOLoop.instance().start()
+        except:
+            log.exception("Failed to start server '%s' on port %i",
+                          api.settings["id"], port)
+            sys.exit(errno.EINTR)
+
+    def create_parser(self):
+        parser = ArgumentParser()
+        parser.add_argument("--port", type=int, default=8000)
+        parser.add_argument("--enable", action="append")
+        parser.add_argument("--disable", action="append")
+        parser.add_argument("--settings", type=_SettingsType(self.loader),
+                            default={})
+        parser.add_argument("--set", dest="inline_settings",
+                            action=_AppendSettingAction, default=[])
+        self.add_arguments(parser)
+        return parser
 
 
-def _build_arg_parser(loader):
-    parser = ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--enable", action="append")
-    parser.add_argument("--disable", action="append")
-    parser.add_argument("--settings", type=_SettingsType(loader), default={})
-    parser.add_argument("--set", dest="inline_settings",
-                        action=_AppendSettingAction, default=[])
-    return parser
+def run_cli(api, **kwargs):
+    class Cli(BaseCli):
+        def create_api(self):
+            return api
+
+    Cli(**kwargs).run()
 
 
 def _add_inline_settings(inline_settings, settings):
