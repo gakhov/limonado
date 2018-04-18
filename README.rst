@@ -4,12 +4,12 @@
 Limonado: Tornado API Tools
 ****************************
 
-.. image:: https://img.shields.io/travis/gakhov/limonado/master.svg?style=flat-square
-    :target: https://travis-ci.org/gakhov/limonado
+.. image:: https://img.shields.io/travis/ferretgo/limonado/master.svg?style=flat-square
+    :target: https://travis-ci.org/ferretgo/limonado
     :alt: Travis Build Status
 
-.. image:: https://img.shields.io/github/release/gakhov/limonado.svg?style=flat-square
-    :target: https://github.com/gakhov/limonado/releases
+.. image:: https://img.shields.io/github/release/ferretgo/limonado.svg?style=flat-square
+    :target: https://github.com/ferretgo/limonado/releases
     :alt: Current Release Version
 
 
@@ -23,13 +23,13 @@ Limonado: Tornado API Tools
     :alt: Documentation Version
 
 
-.. image:: https://coveralls.io/repos/github/gakhov/limonado/badge.svg?branch=master&style=flat-square
-   :target: https://coveralls.io/github/gakhov/limonado?branch=master
+.. image:: https://coveralls.io/repos/github/ferretgo/limonado/badge.svg?branch=master&style=flat-square
+   :target: https://coveralls.io/github/ferretgo/limonado?branch=master
    :alt: Coverage
 
 
 .. image:: https://img.shields.io/pypi/pyversions/limonado.svg?style=flat-square
-    :target: https://github.com/gakhov/limonado
+    :target: https://github.com/ferretgo/limonado
     :alt: Python versions
 
 .. contents ::
@@ -59,7 +59,7 @@ MIT License
 Source code
 -----------
 
-* https://github.com/gakhov/limonado/
+* https://github.com/ferretgo/limonado/
 
 
 Authors
@@ -92,12 +92,12 @@ Compile from source
 ---------------------
 
 The other way to install Limonado is to clone its
-`GitHub repository <https://github.com/gakhov/limonado>`_ and build it from
+`GitHub repository <https://github.com/ferretgo/limonado>`_ and build it from
 source.
 
 .. code:: bash
 
-    $ git clone https://github.com/gakhov/limonado.git
+    $ git clone https://github.com/ferretgo/limonado.git
     $ cd limonado
 
     $ make build
@@ -106,4 +106,4 @@ source.
     $ make tests
 
 
-.. |logo| image:: https://raw.githubusercontent.com/gakhov/limonado/master/docs/_static/logo.png
+.. |logo| image:: https://raw.githubusercontent.com/ferretgo/limonado/master/docs/_static/logo.png
