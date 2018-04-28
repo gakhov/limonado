@@ -22,7 +22,13 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 format_checker = jsonschema.FormatChecker()
-format_checker.checks("duration")(validate_duration)
+
+
+def register_format(name, validator):
+    format_checker.checks(name)(validator)
+
+
+register_format("duration", validate_duration)
 
 
 def validate_request(params_schema=None, json_schema=None):
