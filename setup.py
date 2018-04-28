@@ -49,7 +49,7 @@ def setup_package():
             "jsonschema==2.5.1",
             "python-dateutil>=2.5,<2.6",
             "strict_rfc3339==0.5",
-            "tornado>=4.0,<5.0"
+            "tornado>=5.0,<6.0"
         ]
     )
 
