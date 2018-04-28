@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from tornado.escape import json_decode
 from tornado.escape import json_encode
 from tornado.gen import Return
 from tornado.gen import coroutine
 from tornado.web import RequestHandler
 
-from .validation import schemas
 from .exceptions import APIError
-from .validation import validate_request
+from .utils._params import extract_params
+from .validation import schemas
+from .validation import validate_request_data
 from .validation import validate_response
 
 __all__ = [
@@ -54,6 +56,25 @@ class EndpointHandler(RequestHandler):
 
         self.write_json(error)
 
+    def get_params(self, schema):
+        params = extract_params(self.request.arguments, schema)
+        validate_request_data(params, schema)
+        return params
+
+    def get_json(self, schema=None):
+        if not self.request.body:
+            return None
+
+        try:
+            json = json_decode(self.request.body.decode("utf-8"))
+        except ValueError:
+            raise APIError(400, "Malformed JSON")
+        else:
+            if schema is not None:
+                validate_request_data(json, schema)
+
+            return json
+
     def write_json(self, value):
         self.write(json_encode(value))
 
@@ -80,10 +101,8 @@ class DeprecatedHandler(EndpointHandler):
 
 class HealthHandler(EndpointHandler):
 
-    request_params_schema = None
     response_schema = schemas.HEALTH
 
-    @validate_request(params_schema=request_params_schema)
     @coroutine
     def head(self):
         health = yield self.check_health()
@@ -95,7 +114,6 @@ class HealthHandler(EndpointHandler):
         self.finish()
 
     @validate_response(response_schema)
-    @validate_request(params_schema=request_params_schema)
     @coroutine
     def get(self):
         health = yield self.check_health()
