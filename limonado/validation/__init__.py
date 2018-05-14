@@ -2,6 +2,7 @@
 
 from functools import wraps
 import logging
+import warnings
 
 import jsonschema
 from tornado.concurrent import is_future
@@ -24,6 +25,9 @@ format_checker.checks("duration")(validate_duration)
 
 
 def validate_request(params_schema=None, json_schema=None):
+    warnings.warn("`validate_request` is deprecated and will be removed in "
+                  "1.0. Use `get_json` and `get_params` on the request "
+                  "handler instead.", DeprecationWarning)
 
     @container
     def _validate(rh_method):

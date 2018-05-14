@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import warnings
+
 from .application import WebAPI
 from .cli import run_cli
 from .endpoints import Endpoint
@@ -21,3 +23,6 @@ __all__ = [
     "validate_request",
     "validate_response",
 ]
+
+# Make sure that DeprecationWarning always gets printed.
+warnings.filterwarnings("always", category=DeprecationWarning, module=__name__)
