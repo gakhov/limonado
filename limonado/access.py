@@ -11,21 +11,16 @@ __all__ = [
 ]
 
 
-def authenticated():
+def authenticated(rh_method):
     """Check if user is registered and can be authenticated."""
-    @container
-    def _authenticate(rh_method):
+    @wraps(rh_method)
+    def _wrapper(self, *args, **kwargs):
+        if self.current_user is None:
+            raise APIError(401, "Not Authenticated")
 
-        @wraps(rh_method)
-        def _wrapper(self, *args, **kwargs):
-            if self.current_user is None:
-                raise APIError(401, "Not Authenticated")
+        return rh_method(self, *args, **kwargs)
 
-            return rh_method(self, *args, **kwargs)
-
-        return _wrapper
-
-    return _authenticate
+    return _wrapper
 
 
 def authorized(*scopes):
