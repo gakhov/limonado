@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from tornado.gen import Return
 from tornado.gen import coroutine
 
 from .handlers import HealthHandler
@@ -38,7 +37,7 @@ class Endpoint(object):
 
     @coroutine
     def check_health(self):
-        raise Return(Health())
+        return Health()
 
 
 class RootEndpoint(Endpoint):

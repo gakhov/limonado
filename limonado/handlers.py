@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from tornado.escape import json_encode
-from tornado.gen import Return
 from tornado.gen import coroutine
 from tornado.web import RequestHandler
 
@@ -102,7 +101,7 @@ class HealthHandler(EndpointHandler):
         if not health.ok:
             self.set_status(503)
 
-        raise Return(health.details)
+        return health.details
 
     def check_health(self):
         return self.endpoint.check_health()
