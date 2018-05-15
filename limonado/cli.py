@@ -15,7 +15,7 @@ import tornado.ioloop
 
 __all__ = [
     "BaseCli",
-    "run_cli"
+    "run"
 ]
 
 log = logging.getLogger(__name__)
@@ -68,9 +68,9 @@ class BaseCli:
         return parser
 
 
-def run_cli(api, **kwargs):
+def run(api, **kwargs):
     class Cli(BaseCli):
-        def create_api(self):
+        def create_api(self, args):
             return api
 
     Cli(**kwargs).run()
