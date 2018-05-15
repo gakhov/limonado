@@ -80,8 +80,8 @@ class HealthHandler(EndpointHandler):
 
     @coroutine
     def head(self):
-        health = yield self.check_health()
-        if not health.ok:
+        status = yield self.check_health()
+        if not status.ok:
             self.set_status(503)
         else:
             self.set_status(200)
@@ -91,11 +91,11 @@ class HealthHandler(EndpointHandler):
     @validate_response(response_schema)
     @coroutine
     def get(self):
-        health = yield self.check_health()
-        if not health.ok:
+        status = yield self.check_health()
+        if not status.ok:
             self.set_status(503)
 
-        return health.details
+        return status.as_json_data()
 
     def check_health(self):
         return self.endpoint.check_health()

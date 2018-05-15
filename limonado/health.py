@@ -17,8 +17,7 @@ class HealthStatus:
     def ok(self):
         return not self._errors
 
-    @property
-    def details(self):
+    def as_json_data(self):
         return {
             "ok": self.ok,
             "ok_as_string": "yes" if self.ok else "no",
