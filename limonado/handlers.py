@@ -12,10 +12,8 @@ from .validation import validate_request_data
 from .validation import validate_response
 
 __all__ = [
-    "DeprecatedHandler",
     "EndpointHandler",
-    "HealthHandler",
-    "WelcomeHandler",
+    "HealthHandler"
 ]
 
 
@@ -35,12 +33,10 @@ class EndpointHandler(RequestHandler):
 
     def initialize(self, endpoint):
         self.endpoint = endpoint
-        self._set_endpoint_headers()
 
     def write_error(self, status_code, **kwargs):
         self.clear()
         self.set_status(status_code)
-        self._set_endpoint_headers()
         error = {
             "code": status_code,
             "message": self._reason
@@ -77,26 +73,6 @@ class EndpointHandler(RequestHandler):
     def write_json(self, value):
         self.write(json_encode(value))
 
-    def _set_endpoint_headers(self):
-        if self.endpoint is not None and not self.endpoint.is_root:
-            self.set_header("Endpoint", self.endpoint.name)
-            self.set_header("Endpoint-Version", self.endpoint.version)
-
-
-class DeprecatedHandler(EndpointHandler):
-    """Special type of handler to raise HTTP Error 410 Gone."""
-
-    def _deprecated(self, *args, **kargs):
-        raise APIError(410, "This endpoint is deprecated")
-
-    head = _deprecated
-    get = _deprecated
-    post = _deprecated
-    delete = _deprecated
-    patch = _deprecated
-    put = _deprecated
-    options = _deprecated
-
 
 class HealthHandler(EndpointHandler):
 
@@ -123,13 +99,3 @@ class HealthHandler(EndpointHandler):
 
     def check_health(self):
         return self.endpoint.check_health()
-
-
-class WelcomeHandler(EndpointHandler):
-
-    def get(self):
-        self.write_json({
-            "name": self.application.name,
-            "version": self.application.version
-        })
-        self.finish()

@@ -72,13 +72,6 @@ SETTINGS = {
             "type": "string",
             "minLength": 1
         },
-        "deprecated_versions": {
-            "type": "array",
-            "items": {
-                "type": "string",
-                "minLength": 1
-            }
-        },
         "server": {
             "type": "string",
             "minLength": 1
@@ -104,7 +97,6 @@ SETTINGS = {
         "name",
         "id",
         "version",
-        "deprecated_versions",
         "server",
         "threads"
     ]

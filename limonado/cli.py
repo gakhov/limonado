@@ -49,7 +49,7 @@ class BaseCli:
         try:
             app = api.get_application(enable=enable)
             app.listen(port)
-            tornado.ioloop.IOLoop.instance().start()
+            tornado.ioloop.IOLoop.current().start()
         except:
             log.exception("Failed to start server '%s' on port %i",
                           api.settings["id"], port)
