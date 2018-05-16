@@ -34,7 +34,6 @@ def setup_package():
             "Operating System :: OS Independent",
             "Topic :: Internet :: WWW/HTTP",
             "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.3",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
@@ -49,7 +48,7 @@ def setup_package():
             "jsonschema==2.5.1",
             "python-dateutil>=2.5,<2.6",
             "strict_rfc3339==0.5",
-            "tornado>=4.0,<5.0"
+            "tornado>=5.0,<6.0"
         ]
     )
 
