@@ -2,14 +2,13 @@
 
 from functools import wraps
 import logging
+import warnings
 
 import jsonschema
 from tornado.concurrent import is_future
-from tornado.escape import json_decode
 from tornado.gen import coroutine
 
 from ..exceptions import APIError
-from ..utils._params import extract_params
 from ..utils.decorators import container
 from ..utils.validators import validate_duration
 
@@ -32,31 +31,19 @@ register_format("duration", validate_duration)
 
 
 def validate_request(params_schema=None, json_schema=None):
+    warnings.warn("`validate_request` is deprecated and will be removed in "
+                  "1.0. Use `get_json` and `get_params` on the request "
+                  "handler instead.", DeprecationWarning)
 
     @container
     def _validate(rh_method):
 
         @wraps(rh_method)
         def _wrapper(self, *args, **kwargs):
-            if params_schema is None:
-                params = {}
-            else:
-                params = extract_params(self.request.arguments, params_schema)
-                _validate_request_data(params, params_schema)
+            if params_schema is not None:
+                self.params = self.get_params(params_schema)
 
-            if not self.request.body:
-                json = None
-            else:
-                try:
-                    json = json_decode(self.request.body.decode("utf-8"))
-                except ValueError:
-                    raise APIError(400, "Malformed JSON")
-
-            if json_schema is not None:
-                _validate_request_data(json, json_schema)
-
-            self.params = params
-            self.json = json
+            self.json = self.get_json(schema=json_schema)
             return rh_method(self, *args, **kwargs)
 
         return _wrapper
@@ -92,7 +79,7 @@ def validate_response(schema):
     return _validate
 
 
-def _validate_request_data(data, schema):
+def validate_request_data(data, schema):
     try:
         jsonschema.validate(data, schema, format_checker=format_checker)
     except jsonschema.ValidationError as error:
