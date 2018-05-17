@@ -93,8 +93,6 @@ def _build_versioned_handlers(version, endpoint):
 
     default_handler_kwargs = {"endpoint": endpoint}
     handlers = []
-    handlers.append((make_path("/{name}/_health"),
-                     endpoint.health_handler_class, default_handler_kwargs))
     for handler in endpoint.handlers:
         try:
             path, handler_class, handler_kwargs = handler
