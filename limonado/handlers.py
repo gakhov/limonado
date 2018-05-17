@@ -82,7 +82,7 @@ class HealthHandler(EndpointHandler):
     def head(self):
         status = yield self.check_health()
         if not status.ok:
-            self.set_status(503)
+            self.set_status(self._unhealthy_status)
         else:
             self.set_status(200)
 
@@ -93,9 +93,13 @@ class HealthHandler(EndpointHandler):
     def get(self):
         status = yield self.check_health()
         if not status.ok:
-            self.set_status(503)
+            self.set_status(self._unhealthy_status)
 
         return status.as_json_data()
 
     def check_health(self):
         return self.endpoint.check_health()
+
+    @property
+    def _unhealthy_status(self):
+        return self.endpoint.context.settings.get("unhealthy_status", 503)

@@ -3,7 +3,7 @@
 __all__ = ["Endpoint"]
 
 
-class Endpoint(object):
+class Endpoint:
     """Base class for Endpoints."""
 
     name = None
