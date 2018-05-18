@@ -59,30 +59,18 @@ _HEALTH_SCHEMA = {
 }
 
 
-class HealthAddon(EndpointAddon):
-    @property
-    def handlers(self):
-        return [
-            ("{name}/_health", HealthHandler, dict(callback=self.check_health))
-        ]
-
-    @coroutine
-    def check_health(self):
-        return HealthStatus()
-
-
 class HealthHandler(EndpointHandler):
     response_schema = _HEALTH_SCHEMA
 
-    def initialize(self, endpoint, callback):
+    def initialize(self, endpoint, addon):
         super().initialize(endpoint)
-        self._callback = callback
+        self._addon = addon
 
     @coroutine
     def head(self):
-        status = yield self._callback()
+        status = yield self._addon.check_health()
         if not status.ok:
-            self.set_status(self._unhealthy_status)
+            self.set_status(self._addon.unhealthy_status)
         else:
             self.set_status(200)
 
@@ -91,15 +79,33 @@ class HealthHandler(EndpointHandler):
     @validate_response(response_schema)
     @coroutine
     def get(self):
-        status = yield self._callback()
+        status = yield self._addon.check_health()
         if not status.ok:
-            self.set_status(self._unhealthy_status)
+            self.set_status(self._addon.unhealthy_status)
 
         return status.as_json_data()
 
+
+class HealthAddon(EndpointAddon):
+    unhealthy_status = 503
+
+    def __init__(self,
+                 endpoint,
+                 path="{name}/_health",
+                 handler_class=HealthHandler):
+        super().__init__(endpoint)
+        self._path = path
+        self._handler_class = handler_class
+
     @property
-    def _unhealthy_status(self):
-        return self.endpoint.context.settings.get("unhealthy_status", 503)
+    def handlers(self):
+        return [
+            (self._path, self._handler_class, dict(addon=self))
+        ]
+
+    @coroutine
+    def check_health(self):
+        return HealthStatus()
 
 
 class HealthStatus:

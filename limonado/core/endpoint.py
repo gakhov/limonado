@@ -21,10 +21,14 @@ class Endpoint:
 
     def __init__(self, context):
         self._context = context
-        self._addon_map = {
-            addon_class: addon_class(self)
-            for addon_class in self.addons
-        }
+        self._addon_map = {}
+        for spec in self.addons:
+            try:
+                addon_class, kwargs = spec
+            except TypeError:
+                addon_class, kwargs = spec, {}
+
+            self._addon_map[addon_class] = addon_class(self, **kwargs)
 
     @property
     def context(self):
