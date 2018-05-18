@@ -26,7 +26,8 @@ class Endpoint:
             try:
                 addon_class, kwargs = spec
             except TypeError:
-                addon_class, kwargs = spec, {}
+                addon_class = spec
+                kwargs = {}
 
             self._addon_map[addon_class] = addon_class(self, **kwargs)
 

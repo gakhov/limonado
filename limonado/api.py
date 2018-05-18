@@ -41,12 +41,13 @@ class WebAPI:
         self._endpoints[name] = (endpoint_class, endpoint_kwargs or {})
         return self
 
-    def add_endpoints(self, endpoint_specs):
-        for spec in endpoint_specs:
+    def add_endpoints(self, endpoints):
+        for endpoint in endpoints:
             try:
-                endpoint_class, endpoint_kwargs = spec
+                endpoint_class, endpoint_kwargs = endpoint
             except ValueError:
-                endpoint_class, endpoint_kwargs = spec, {}
+                endpoint_class = endpoint
+                endpoint_kwargs = {}
 
             self.add_endpoint(endpoint_class, endpoint_kwargs=endpoint_kwargs)
 
@@ -54,24 +55,9 @@ class WebAPI:
 
     def get_application(self, enable=None):
         self._validate_settings()
-        handlers = self._get_endpoint_handlers(enable)
-        return Application(self.settings, handlers=handlers)
-
-    def _create_context(self):
-        executor = futures.ThreadPoolExecutor()
-        return self.context_class(self.settings, executor, **self.objects)
-
-    def _get_endpoint_handlers(self, enable):
-        handlers = []
-        context = self._create_context()
-        for name, (endpoint_class, endpoint_kwargs) in self._endpoints.items():
-            if enable is None or name in enable:
-                endpoint = endpoint_class(context, **endpoint_kwargs)
-                handlers.extend(
-                    _build_versioned_handlers(self.settings["version"],
-                                              endpoint))
-
-        return handlers
+        endpoints = self._create_endpoints(enable)
+        endpoint_handlers = self._get_endpoint_handlers(endpoints)
+        return Application(self.settings, handlers=endpoint_handlers)
 
     def _validate_settings(self):
         try:
@@ -79,28 +65,60 @@ class WebAPI:
         except jsonschema.ValidationError as error:
             raise ValueError(error)
 
+    def _get_api_path(self):
+        return "{base_path}/v{version}/".format(
+            base_path=self.settings.get("base_path", "").rstrip("/"),
+            version=self.settings["version"])
 
-def _build_versioned_handlers(version, endpoint):
-    handlers = []
-    default_handler_kwargs = {"endpoint": endpoint}
+    def _create_endpoints(self, enable):
+        endpoints = []
+        context = self._create_context()
+        for name, (endpoint_class, endpoint_kwargs) in self._endpoints.items():
+            if enable is None or name in enable:
+                endpoint = endpoint_class(context, **endpoint_kwargs)
+                endpoints.append(endpoint)
 
-    def make_path(path):
-        real_path = path.lstrip("/").replace("{name}", endpoint.name)
-        return "/v{version}/{path}".format(version=version, path=real_path)
+        return endpoints
 
-    def add_handlers(specs):
-        for handler in specs:
-            try:
-                path, handler_class, handler_kwargs = handler
-            except ValueError:
-                path, handler_class = handler
-                handler_kwargs = {}
+    def _create_context(self):
+        executor = futures.ThreadPoolExecutor()
+        return self.context_class(self.settings, executor, **self.objects)
 
-            handler_kwargs.update(default_handler_kwargs)
-            handlers.append((make_path(path), handler_class, handler_kwargs))
+    def _get_endpoint_handlers(self, endpoints):
+        handlers = []
+        api_path = self._get_api_path()
+        seen = {}
+        for endpoint in endpoints:
+            for handler in _build_endpoint_handlers(endpoint, api_path):
+                path = handler[0]
+                if path in seen:
+                    first_endpoint = seen[path]
+                    raise ValueError("duplicate path '{}' in '{}', "
+                                     "first found in '{}'".format(
+                                         path, endpoint.name,
+                                         first_endpoint.name))
 
-    add_handlers(endpoint.handlers)
+                handlers.append(handler)
+                seen[path] = endpoint
+
+        return handlers
+
+
+def _build_endpoint_handlers(endpoint, api_path):
+    for handler in _iter_handlers(endpoint):
+        try:
+            handler_path, handler_class, handler_kwargs = handler
+        except ValueError:
+            handler_path, handler_class = handler
+            handler_kwargs = {}
+
+        handler_kwargs["endpoint"] = endpoint
+        path = api_path + handler_path.lstrip("/").replace(
+            "{name}", endpoint.name)
+        yield path, handler_class, handler_kwargs
+
+
+def _iter_handlers(endpoint):
+    yield from endpoint.handlers
     for addon in endpoint.iter_addons():
-        add_handlers(addon.handlers)
-
-    return handlers
+        yield from addon.handlers

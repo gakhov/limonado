@@ -21,6 +21,10 @@ SETTINGS = {
         "server": {
             "type": "string",
             "minLength": 1
+        },
+        "base_path": {
+            "type": "string",
+            "minLength": 1
         }
     },
     "required": [
