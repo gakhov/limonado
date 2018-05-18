@@ -13,6 +13,6 @@ def get_default_settings():
     return {
         "name": "Limonado",
         "id": uuid.uuid4().hex[:8],
-        "version": "1.0",
+        "version": "1",
         "server": "Limonado/{}".format(__version__)
     }
