@@ -13,16 +13,12 @@ import sys
 
 import tornado.ioloop
 
-__all__ = [
-    "BaseCli",
-    "run"
-]
+__all__ = ["BaseCli", "run"]
 
 log = logging.getLogger(__name__)
 
 
 class BaseCli:
-
     def __init__(self, loader=json.load):
         self.loader = loader
 
@@ -60,10 +56,13 @@ class BaseCli:
         parser.add_argument("--port", type=int, default=8000)
         parser.add_argument("--enable", action="append")
         parser.add_argument("--disable", action="append")
-        parser.add_argument("--settings", type=_SettingsType(self.loader),
-                            default={})
-        parser.add_argument("--set", dest="inline_settings",
-                            action=_AppendSettingAction, default=[])
+        parser.add_argument(
+            "--settings", type=_SettingsType(self.loader), default={})
+        parser.add_argument(
+            "--set",
+            dest="inline_settings",
+            action=_AppendSettingAction,
+            default=[])
         self.add_arguments(parser)
         return parser
 
@@ -95,8 +94,8 @@ def _parse_inline_value(string):
 
 
 def _is_unqouted_string(string):
-    if (string.startswith(('"', "{", "[")) or
-            string in ("null", "true", "false")):
+    if (string.startswith(('"', "{", "["))
+            or string in ("null", "true", "false")):
         return False
 
     for factory in (float, int):
@@ -111,7 +110,6 @@ def _is_unqouted_string(string):
 
 
 class _AppendSettingAction(Action):
-
     def __init__(self,
                  option_strings,
                  dest,
@@ -143,8 +141,7 @@ class _AppendSettingAction(Action):
         setattr(namespace, self.dest, items)
 
 
-class _SettingsType(object):
-
+class _SettingsType:
     def __init__(self, loader):
         self.loader = loader
 
