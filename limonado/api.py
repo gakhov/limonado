@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from copy import deepcopy
+import os
 
 import jsonschema
 from tornado.concurrent import futures
@@ -81,7 +82,7 @@ class WebAPI:
         return endpoints
 
     def _create_context(self):
-        executor = futures.ThreadPoolExecutor()
+        executor = futures.ThreadPoolExecutor((os.cpu_count() or 1) * 5)
         return self.context_class(self.settings, executor, **self.objects)
 
     def _get_endpoint_handlers(self, endpoints):
