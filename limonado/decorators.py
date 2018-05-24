@@ -21,18 +21,19 @@ def authenticated(rh_method):
     return _wrapper
 
 
-def authorized(*scopes):
+def authorized(*permissions):
     @container
     def _check(rh_method):
         @wraps(rh_method)
         def _wrapper(self, *args, **kwargs):
-            if self.current_user is None:
+            user = self.current_user
+            if user is None:
                 raise APIError(401, "Not Authenticated")
 
-            if (not self.current_user.is_superuser
-                    and not any(scope in self.current_user.scopes
-                                for scope in scopes)):
-                raise APIError(403, "Access Denied")
+            if not any(
+                    user.has_permission(permission)
+                    for permission in permissions):
+                raise APIError(403, "Insufficient Permissions")
 
             return rh_method(self, *args, **kwargs)
 
