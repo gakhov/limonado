@@ -5,6 +5,7 @@ import os
 
 import jsonschema
 from tornado.concurrent import futures
+import tornado.ioloop
 
 from .core.application import Application
 from .core.context import Context
@@ -53,6 +54,11 @@ class WebAPI:
             self.add_endpoint(endpoint_class, endpoint_kwargs=endpoint_kwargs)
 
         return self
+
+    def run(self, port=8000, address="", **kwargs):
+        app = self.get_application(**kwargs)
+        app.listen(port, address=address)
+        tornado.ioloop.IOLoop.current().start()
 
     def get_application(self, enable=None):
         self._validate_settings()

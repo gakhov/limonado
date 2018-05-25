@@ -11,8 +11,6 @@ import json
 import logging
 import sys
 
-import tornado.ioloop
-
 __all__ = ["BaseCli", "run"]
 
 log = logging.getLogger(__name__)
@@ -40,20 +38,19 @@ class BaseCli:
         else:
             enable = args.enable or None
 
-        port = args.port
-        log.info("Starting server '%s' on port %i", api.settings["id"], port)
+        log.info("Starting server '%s' on %s:%i", api.settings["id"],
+                 args.address, args.port)
         try:
-            app = api.get_application(enable=enable)
-            app.listen(port)
-            tornado.ioloop.IOLoop.current().start()
+            api.run(port=args.port, address=args.address, enable=enable)
         except:
-            log.exception("Failed to start server '%s' on port %i",
-                          api.settings["id"], port)
+            log.exception("Failed to start server '%s' on %s:%i",
+                          api.settings["id"], args.address, args.port)
             sys.exit(errno.EINTR)
 
     def create_parser(self):
         parser = ArgumentParser()
         parser.add_argument("--port", type=int, default=8000)
+        parser.add_argument("--address", default="")
         parser.add_argument("--enable", action="append")
         parser.add_argument("--disable", action="append")
         parser.add_argument(
