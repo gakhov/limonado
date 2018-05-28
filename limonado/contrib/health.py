@@ -92,10 +92,12 @@ class HealthAddon(EndpointAddon):
     def __init__(self,
                  endpoint,
                  path="{name}/_health",
-                 handler_class=HealthHandler):
+                 handler_class=HealthHandler,
+                 callback=None):
         super().__init__(endpoint)
         self._path = path
         self._handler_class = handler_class
+        self._callback = callback
 
     @property
     def handlers(self):
@@ -105,6 +107,10 @@ class HealthAddon(EndpointAddon):
 
     @coroutine
     def check_health(self):
+        if self._callback is not None:
+            status = yield self._callback(self)
+            return status
+
         return HealthStatus()
 
 
