@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-__all__ = [
-    "extract_params"
-]
+__all__ = ["extract_params"]
 
-_ITEM_SEPARATORS = (None, " ", ",", "|")
+_ITEM_SEPARATORS = {None: None, " ": b" ", ",": b",", "|": b"|"}
 
 _CONVERTERS = {
     "boolean": lambda v: v == b"true" if v in (b"true", b"false") else v,
@@ -39,13 +37,14 @@ def _process_values(values, schema):
         return _convert_array(values, schema)
     elif len(values) == 1:
         return _convert(values[0], schema)
-    else:
-        return values
+
+    return values
 
 
 def _convert_array(values, schema):
-    separator = schema.get("itemSeparator")
-    if separator not in _ITEM_SEPARATORS:
+    try:
+        separator = _ITEM_SEPARATORS[schema.get("itemSeparator")]
+    except KeyError:
         raise ValueError("invalid item separator: {}".format(separator))
 
     if separator is None:
@@ -56,22 +55,23 @@ def _convert_array(values, schema):
         items = []
 
     def _get_subschema_for_index(index):
-        if isinstance(schema, dict):
-            return schema
+        items = schema["items"]
+        if isinstance(items, dict):
+            return items
 
         try:
-            return schema[index]
+            return items[index]
         except IndexError:
             additional_items = schema["additionalItems"]
             if isinstance(additional_items, dict):
                 return additional_items
-            else:
-                return {
-                    "type": "string"
-                }
 
-    return [_convert(item, _get_subschema_for_index(i))
-            for i, item in enumerate(items)]
+            return {"type": "string"}
+
+    return [
+        _convert(item, _get_subschema_for_index(i))
+        for i, item in enumerate(items)
+    ]
 
 
 def _convert(value, schema):
@@ -93,5 +93,5 @@ def _guess_type(schema):
             return "object"
         elif "items" in schema:
             return "array"
-        else:
-            return "string"
+
+        return "string"
