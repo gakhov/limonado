@@ -11,6 +11,7 @@ _HEALTH_PARAMS = {
     "properties": {
         "check": {
             "type": "array",
+            "itemSeparator": ",",
             "items": {
                 "type": "string"
             }
