@@ -73,18 +73,6 @@ class EndpointHandler(RequestHandler):
     def initialize(self, endpoint):
         self.endpoint = endpoint
 
-    def write_error(self, status_code, **kwargs):
-        self.clear()
-        self.set_status(status_code)
-        error = {"code": status_code, "message": self._reason}
-        exception = kwargs["exc_info"][1]
-        if isinstance(exception, APIError):
-            error["error"] = {"message": exception.message}
-            if exception.details:
-                error["error"].update(exception.details)
-
-        self.write_json(error)
-
     def get_params(self, schema):
         params = extract_params(self.request.arguments, schema)
         validate_request_data(params, schema)
@@ -106,3 +94,15 @@ class EndpointHandler(RequestHandler):
 
     def write_json(self, value):
         self.write(json_encode(value))
+
+    def write_error(self, status_code, **kwargs):
+        self.clear()
+        self.set_status(status_code)
+        error = {"code": status_code, "message": self._reason}
+        exception = kwargs["exc_info"][1]
+        if isinstance(exception, APIError):
+            error["error"] = {"message": exception.message}
+            if exception.details:
+                error["error"].update(exception.details)
+
+        self.write_json(error)

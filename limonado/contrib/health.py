@@ -1,89 +1,56 @@
 # -*- coding: utf-8 -*-
 
-import collections
-from traceback import format_exception
-
 from tornado.gen import coroutine
 
 from ..core.endpoint import EndpointAddon
 from ..core.endpoint import EndpointHandler
-from ..validation import validate_response
 
-_Error = collections.namedtuple("_Error", "source reason exception")
-
-_HEALTH_SCHEMA = {
+_HEALTH_PARAMS = {
     "additionalProperties": False,
     "type": "object",
     "properties": {
-        "ok": {
-            "type": "boolean"
-        },
-        "ok_as_string": {
-            "type": "string",
-            "enum": [
-                "yes",
-                "no"
-            ]
-        },
-        "errors": {
+        "check": {
             "type": "array",
             "items": {
-                "additionalProperties": False,
-                "properties": {
-                    "source": {
-                        "type": ["null", "string"],
-                        "minLength": 1
-                    },
-                    "reason": {
-                        "type": ["null", "string"],
-                        "minLength": 1
-                    },
-                    "exception": {
-                        "type": ["null", "string"],
-                        "minLength": 1
-                    }
-                },
-                "required": [
-                    "source",
-                    "reason",
-                    "exception"
-                ]
+                "type": "string"
             }
         }
-    },
-    "required": [
-        "ok",
-        "ok_as_string",
-        "errors"
-    ]
+    }
 }
 
 
 class HealthHandler(EndpointHandler):
-    response_schema = _HEALTH_SCHEMA
-
     def initialize(self, endpoint, addon):
         super().initialize(endpoint)
         self._addon = addon
 
     @coroutine
     def head(self):
-        status = yield self._addon.check_health()
-        if not status.ok:
+        status = yield self._check_health()
+        if not status["ok"]:
             self.set_status(self._addon.unhealthy_status)
-        else:
-            self.set_status(200)
 
         self.finish()
 
-    @validate_response(response_schema)
     @coroutine
     def get(self):
-        status = yield self._addon.check_health()
-        if not status.ok:
+        status = yield self._check_health()
+        if not status["ok"]:
             self.set_status(self._addon.unhealthy_status)
 
-        return status.as_json_data()
+        self.write_json(status)
+        self.finish()
+
+    @coroutine
+    def _check_health(self):
+        params = self.get_params(_HEALTH_PARAMS)
+        errors = yield self._addon.check_health(include=params.get("check"))
+        ok = not errors
+        return {
+            "ok": ok,
+            "ok_as_string": "true" if ok else "false",
+            "errors": errors
+        }
 
 
 class HealthAddon(EndpointAddon):
@@ -93,11 +60,11 @@ class HealthAddon(EndpointAddon):
                  endpoint,
                  path="{name}/_health",
                  handler_class=HealthHandler,
-                 callback=None):
+                 checks=None):
         super().__init__(endpoint)
         self._path = path
         self._handler_class = handler_class
-        self._callback = callback
+        self._checks = dict(checks) if checks is not None else {}
 
     @property
     def handlers(self):
@@ -106,38 +73,22 @@ class HealthAddon(EndpointAddon):
         ]
 
     @coroutine
-    def check_health(self):
-        if self._callback is not None:
-            status = yield self._callback(self)
-            return status
+    def check_health(self, include=None):
+        errors = {}
+        for name, check in self._checks.items():
+            if include is None or name in include:
+                try:
+                    yield check(self)
+                except HealthError as exc:
+                    errors[name] = exc.error
 
-        return HealthStatus()
+        return errors
 
 
-class HealthStatus:
-    def __init__(self):
-        self._errors = []
+class HealthError(Exception):
+    def __init__(self, error):
+        self._error = error
 
     @property
-    def ok(self):
-        return not self._errors
-
-    def as_json_data(self):
-        return {
-            "ok": self.ok,
-            "ok_as_string": "yes" if self.ok else "no",
-            "errors": [{
-                "source": error.source,
-                "reason": error.reason,
-                "exception": error.exception,
-            } for error in self._errors]
-        }
-
-    def add_error(self, source, reason=None):
-        self._errors.append(_Error(source, reason, None))
-        return self
-
-    def add_exception(self, exc, source=None, reason="exception"):
-        tb = "".join(format_exception(type(exc), exc, exc.__traceback__))
-        self._errors.append(_Error(source, reason, tb))
-        return self
+    def error(self):
+        return self._error
