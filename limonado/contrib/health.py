@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import functools
+import time
+
 from tornado.gen import coroutine
 
 from ..core.endpoint import EndpointAddon
@@ -18,6 +21,39 @@ _HEALTH_PARAMS = {
         }
     }
 }
+
+
+def cache_health(ttl):
+    if hasattr(ttl, "total_seconds"):
+        ttl_seconds = ttl.total_seconds()
+    else:
+        ttl_seconds = ttl
+
+    def decorate(check):
+        health_error = None
+        expires = None
+
+        @coroutine
+        @functools.wraps(check)
+        def wrap(addon):
+            nonlocal health_error, expires
+            if expires is not None and time.time() <= expires:
+                if health_error is not None:
+                    raise health_error
+            else:
+                try:
+                    yield check(addon)
+                except HealthError as exc:
+                    health_error = exc
+                    raise
+                else:
+                    health_error = None
+                finally:
+                    expires = time.time() + ttl_seconds
+
+        return wrap
+
+    return decorate
 
 
 class HealthHandler(EndpointHandler):
@@ -69,9 +105,7 @@ class HealthAddon(EndpointAddon):
 
     @property
     def handlers(self):
-        return [
-            (self._path, self._handler_class, dict(addon=self))
-        ]
+        return [(self._path, self._handler_class, dict(addon=self))]
 
     @coroutine
     def check_health(self, include=None):
