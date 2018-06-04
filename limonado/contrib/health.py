@@ -31,26 +31,26 @@ def cache_health(ttl):
         ttl_seconds = ttl
 
     def decorate(check):
-        health_error = None
-        expires = None
+        issue = None
+        expiration_time = None
 
         @coroutine
         @functools.wraps(check)
         def wrap(*args, **kwargs):
-            nonlocal health_error, expires
-            if expires is not None and time.time() <= expires:
-                if health_error is not None:
-                    raise health_error
+            nonlocal issue, expiration_time
+            if expiration_time is not None and time.time() <= expiration_time:
+                if issue is not None:
+                    raise issue
             else:
                 try:
                     yield check(*args, **kwargs)
-                except HealthError as exc:
-                    health_error = exc
+                except HealthIssue as exc:
+                    issue = exc
                     raise
                 else:
-                    health_error = None
+                    issue = None
                 finally:
-                    expires = time.time() + ttl_seconds
+                    expiration_time = time.time() + ttl_seconds
 
         return wrap
 
@@ -64,31 +64,27 @@ class HealthHandler(EndpointHandler):
 
     @coroutine
     def head(self):
-        status = yield self.check_health()
-        if not status["ok"]:
+        health = yield self.check_health()
+        if health["status"] == "unhealthy":
             self.set_status(self.addon.unhealthy_status)
 
         self.finish()
 
     @coroutine
     def get(self):
-        status = yield self.check_health()
-        if not status["ok"]:
+        health = yield self.check_health()
+        if health["status"] == "unhealthy":
             self.set_status(self.addon.unhealthy_status)
 
-        self.write_json(status)
+        self.write_json(health)
         self.finish()
 
     @coroutine
     def check_health(self):
         params = self.get_params(_HEALTH_PARAMS)
-        errors = yield self.addon.check_health(include=params.get("check"))
-        ok = not errors
-        return {
-            "ok": ok,
-            "ok_as_string": "true" if ok else "false",
-            "errors": errors
-        }
+        issues = yield self.addon.check_health(include=params.get("check"))
+        status = "unhealthy" if issues else "healthy"
+        return {"status": status, "issues": issues}
 
 
 class HealthAddon(EndpointAddon):
@@ -126,15 +122,18 @@ class HealthAddon(EndpointAddon):
 
     @coroutine
     def check_health(self, include=None):
-        errors = {}
+        issues = {}
         for name, check in self.checks.items():
             if include is None or name in include:
                 try:
                     yield check(self.endpoint)
-                except HealthError as exc:
-                    errors[name] = exc.error
+                except HealthIssue as issue:
+                    issues[name] = {
+                        "message": issue.message,
+                        "details": issue.details
+                    }
 
-        return errors
+        return issues
 
 
 class HealthEndpoint(Endpoint):
@@ -151,10 +150,15 @@ class HealthEndpoint(Endpoint):
         return {}
 
 
-class HealthError(Exception):
-    def __init__(self, error):
-        self._error = error
+class HealthIssue(Exception):
+    def __init__(self, message, details=None):
+        self._message = message
+        self._details = {} if details is None else dict(details)
 
     @property
-    def error(self):
-        return self._error
+    def message(self):
+        return self._message
+
+    @property
+    def details(self):
+        return self._details
