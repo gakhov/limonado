@@ -64,7 +64,7 @@ class HealthHandler(EndpointHandler):
 
     @coroutine
     def head(self):
-        status = yield self._check_health()
+        status = yield self.check_health()
         if not status["ok"]:
             self.set_status(self.addon.unhealthy_status)
 
@@ -72,7 +72,7 @@ class HealthHandler(EndpointHandler):
 
     @coroutine
     def get(self):
-        status = yield self._check_health()
+        status = yield self.check_health()
         if not status["ok"]:
             self.set_status(self.addon.unhealthy_status)
 
@@ -80,7 +80,7 @@ class HealthHandler(EndpointHandler):
         self.finish()
 
     @coroutine
-    def _check_health(self):
+    def check_health(self):
         params = self.get_params(_HEALTH_PARAMS)
         errors = yield self.addon.check_health(include=params.get("check"))
         ok = not errors
