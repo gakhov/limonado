@@ -81,6 +81,12 @@ class EndpointHandler(RequestHandler):
     def initialize(self, endpoint):
         self.endpoint = endpoint
 
+    def json_encode(self, value):
+        return json_encode(value)
+
+    def json_decode(self, value):
+        return json_decode(value)
+
     def get_params(self, schema):
         params = extract_params(self.request.arguments, schema)
         validate_request_data(params, schema)
@@ -91,7 +97,7 @@ class EndpointHandler(RequestHandler):
             return None
 
         try:
-            json = json_decode(self.request.body.decode("utf-8"))
+            json = self.json_decode(self.request.body.decode("utf-8"))
         except ValueError:
             raise APIError(400, "Malformed JSON")
         else:
@@ -101,7 +107,7 @@ class EndpointHandler(RequestHandler):
             return json
 
     def write_json(self, value):
-        self.write(json_encode(value))
+        self.write(self.json_encode(value))
 
     def write_error(self, status_code, **kwargs):
         self.clear()
