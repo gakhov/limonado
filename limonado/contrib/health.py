@@ -98,7 +98,12 @@ class HealthAddon(EndpointAddon):
         self._path = path
         self._handler_class = handler_class
         self._unhealthy_status = unhealthy_status
-        self._checks = dict(checks) if checks is not None else {}
+        if checks is None:
+            self._checks = {}
+        elif callable(checks):
+            self._checks = checks(endpoint)
+        else:
+            self._checks = dict(checks)
 
     @property
     def path(self):
