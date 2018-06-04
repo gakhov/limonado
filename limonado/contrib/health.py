@@ -36,14 +36,14 @@ def cache_health(ttl):
 
         @coroutine
         @functools.wraps(check)
-        def wrap(addon):
+        def wrap(*args, **kwargs):
             nonlocal health_error, expires
             if expires is not None and time.time() <= expires:
                 if health_error is not None:
                     raise health_error
             else:
                 try:
-                    yield check(addon)
+                    yield check(*args, **kwargs)
                 except HealthError as exc:
                     health_error = exc
                     raise
