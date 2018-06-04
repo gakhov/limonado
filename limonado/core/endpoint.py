@@ -29,7 +29,7 @@ class Endpoint:
                 addon_class = spec
                 kwargs = {}
 
-            self._addon_map[addon_class] = addon_class(self, **kwargs)
+            self.add_addon(addon_class, addon_kwargs=kwargs)
 
     @property
     def context(self):
@@ -38,6 +38,10 @@ class Endpoint:
     @property
     def handlers(self):
         return []
+
+    def add_addon(self, addon_class, addon_kwargs=None):
+        addon = addon_class(self, **(addon_kwargs or {}))
+        self._addon_map[addon_class] = addon
 
     def get_addon(self, name):
         return self._addon_map.get(name)
@@ -55,6 +59,10 @@ class EndpointAddon(abc.ABC):
     @property
     def endpoint(self):
         return self._endpoint
+
+    @property
+    def context(self):
+        return self._endpoint.context
 
     @abc.abstractproperty
     def handlers(self):
