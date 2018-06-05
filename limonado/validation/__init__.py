@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from functools import wraps
-import logging
 
 import jsonschema
 from tornado.concurrent import is_future
 from tornado.gen import coroutine
 
 from ..exceptions import APIError
+from ..log import log
 from ..utils.decorators import container
 from ..utils.validators import validate_duration
 
 __all__ = ["format_checker", "validate_response"]
-
-log = logging.getLogger(__name__)
 
 format_checker = jsonschema.FormatChecker()
 

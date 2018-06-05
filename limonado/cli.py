@@ -8,12 +8,11 @@ from argparse import ArgumentTypeError
 import collections
 import errno
 import json
-import logging
 import sys
 
-__all__ = ["BaseCli", "run"]
+from .log import log
 
-log = logging.getLogger(__name__)
+__all__ = ["BaseCli", "run"]
 
 
 class BaseCli:

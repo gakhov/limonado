@@ -70,9 +70,9 @@ class RequestHandler(tornado.web.RequestHandler):
 
     def _request_summary(self):
         return "{method} {uri} {id} ({remote_ip})".format(
-            id=self.request_id,
             method=self.request.method,
             uri=self.request.uri,
+            id=self.request_id,
             remote_ip=self.request.remote_ip)
 
 
