@@ -9,6 +9,7 @@ import tornado.ioloop
 
 from .core.application import Application
 from .core.context import Context
+from .core.handlers import ErrorHandler
 from .settings import get_default_settings
 from .utils import merge_defaults
 from .validation import schemas
@@ -64,7 +65,11 @@ class WebAPI:
         self._validate_settings()
         endpoints = self._create_endpoints(enable)
         endpoint_handlers = self._get_endpoint_handlers(endpoints)
-        return Application(self.settings, handlers=endpoint_handlers)
+        return Application(
+            self.settings,
+            handlers=endpoint_handlers,
+            default_handler_class=ErrorHandler,
+            default_handler_args={"status_code": 404})
 
     def _validate_settings(self):
         try:
