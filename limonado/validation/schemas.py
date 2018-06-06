@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["SETTINGS"]
+__all__ = ["CONFIG"]
 
 
-SETTINGS = {
+CONFIG = {
     "type": "object",
     "properties": {
+        "debug": {
+            "type": "boolean"
+        },
         "name": {
             "type": "string",
             "minLength": 1
@@ -28,6 +31,7 @@ SETTINGS = {
         }
     },
     "required": [
+        "debug",
         "name",
         "id",
         "version",

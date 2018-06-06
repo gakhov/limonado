@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
 from argparse import Action
 from argparse import ArgumentError
 from argparse import ArgumentParser
@@ -16,8 +15,8 @@ __all__ = ["BaseCli", "run"]
 
 
 class BaseCli:
-    def __init__(self, loader=json.load):
-        self.loader = loader
+    def __init__(self, config_loader=json.load):
+        self.config_loader = config_loader
 
     def add_arguments(self, parser):
         pass
@@ -29,21 +28,24 @@ class BaseCli:
         parser = self.create_parser()
         args = parser.parse_args()
         api = self.create_api(args)
-        settings = args.settings
-        _add_inline_settings(args.inline_settings, settings)
-        api.settings.update(settings)
+        _add_inline_settings(args.inline_settings, args.config)
+        api.config.update(args.config)
         if args.disable:
             enable = api.endpoint_names - set(args.disable)
         else:
             enable = args.enable or None
 
-        log.info("Starting server '%s' on %s:%i", api.settings["id"],
+        log.info("Starting server '%s' on %s:%i", api.config["id"],
                  args.address, args.port)
         try:
             api.run(port=args.port, address=args.address, enable=enable)
-        except:
-            log.exception("Failed to start server '%s' on %s:%i",
-                          api.settings["id"], args.address, args.port)
+        except Exception as exc:
+            log.critical(
+                "Failed to start server '%s' on %s:%i",
+                api.config["id"],
+                args.address,
+                args.port,
+                exc_info=exc)
             sys.exit(errno.EINTR)
 
     def create_parser(self):
@@ -53,7 +55,7 @@ class BaseCli:
         parser.add_argument("--enable", action="append")
         parser.add_argument("--disable", action="append")
         parser.add_argument(
-            "--settings", type=_SettingsType(self.loader), default={})
+            "--config", type=_ConfigType(self.config_loader), default={})
         parser.add_argument(
             "--set",
             dest="inline_settings",
@@ -71,10 +73,10 @@ def run(api, **kwargs):
     Cli(**kwargs).run()
 
 
-def _add_inline_settings(inline_settings, settings):
+def _add_inline_settings(inline_settings, config):
     for path, value in inline_settings:
         keys = path.split(".")
-        current = settings
+        current = config
         for key in keys[:-1]:
             current = current.setdefault(key, {})
 
@@ -113,7 +115,7 @@ class _AppendSettingAction(Action):
                  required=False,
                  help=None,
                  metavar=None):
-        super(_AppendSettingAction, self).__init__(
+        super().__init__(
             option_strings=option_strings,
             dest=dest,
             nargs=2,
@@ -137,7 +139,7 @@ class _AppendSettingAction(Action):
         setattr(namespace, self.dest, items)
 
 
-class _SettingsType:
+class _ConfigType:
     def __init__(self, loader):
         self.loader = loader
 
@@ -147,20 +149,20 @@ class _SettingsType:
         except OSError:
             raise ArgumentTypeError("can't open '{}'".format(path))
         else:
-            settings = self._load(handle)
+            config = self._load(handle)
             handle.close()
-            return settings
+            return config
 
     def _load(self, handle):
         try:
-            settings = self.loader(handle)
+            config = self.loader(handle)
         except Exception as exc:
-            raise ArgumentTypeError("can't load settings: {}".format(exc))
+            raise ArgumentTypeError("can't load config: {}".format(exc))
         else:
-            if not isinstance(settings, collections.Mapping):
-                raise ArgumentTypeError("settings must be a mapping")
+            if not isinstance(config, collections.Mapping):
+                raise ArgumentTypeError("config must be a mapping")
 
-            return settings
+            return config
 
     def __repr__(self):
         return "{}()".format(self.__class__.__name__)

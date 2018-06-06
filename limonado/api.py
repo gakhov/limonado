@@ -7,10 +7,10 @@ import jsonschema
 from tornado.concurrent import futures
 import tornado.ioloop
 
+from .config import get_default_config
 from .core.application import Application
 from .core.context import Context
 from .core.handlers import ErrorHandler
-from .settings import get_default_settings
 from .utils import merge_defaults
 from .validation import schemas
 
@@ -18,13 +18,13 @@ __all__ = ["WebAPI"]
 
 
 class WebAPI:
-    def __init__(self, settings=None, objects=None, context_class=Context):
-        if settings is None:
-            self.settings = {}
+    def __init__(self, config=None, objects=None, context_class=Context):
+        if config is None:
+            self.config = {}
         else:
-            self.settings = deepcopy(settings)
+            self.config = deepcopy(config)
 
-        merge_defaults(get_default_settings(), self.settings)
+        merge_defaults(get_default_config(), self.config)
         self.objects = objects if objects is not None else {}
         self.context_class = context_class
         self._endpoints = {}
@@ -62,25 +62,25 @@ class WebAPI:
         tornado.ioloop.IOLoop.current().start()
 
     def get_application(self, enable=None):
-        self._validate_settings()
+        self._validate_config()
         endpoints = self._create_endpoints(enable)
         endpoint_handlers = self._get_endpoint_handlers(endpoints)
         return Application(
-            self.settings,
+            self.config,
             handlers=endpoint_handlers,
             default_handler_class=ErrorHandler,
             default_handler_args={"status_code": 404})
 
-    def _validate_settings(self):
+    def _validate_config(self):
         try:
-            jsonschema.validate(self.settings, schemas.SETTINGS)
+            jsonschema.validate(self.config, schemas.CONFIG)
         except jsonschema.ValidationError as error:
             raise ValueError(error)
 
     def _get_api_path(self):
         return "{base_path}/v{version}/".format(
-            base_path=self.settings.get("base_path", "").rstrip("/"),
-            version=self.settings["version"])
+            base_path=self.config.get("base_path", "").rstrip("/"),
+            version=self.config["version"])
 
     def _create_endpoints(self, enable):
         endpoints = []
@@ -94,7 +94,7 @@ class WebAPI:
 
     def _create_context(self):
         executor = futures.ThreadPoolExecutor((os.cpu_count() or 1) * 5)
-        return self.context_class(self.settings, executor, **self.objects)
+        return self.context_class(self.config, executor, **self.objects)
 
     def _get_endpoint_handlers(self, endpoints):
         handlers = []

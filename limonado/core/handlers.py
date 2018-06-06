@@ -24,9 +24,9 @@ class RequestHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self.set_header("Request-Id", self.request_id)
         self.set_header("Content-Type", "application/json")
-        self.set_header("Api", self.application.name)
-        self.set_header("Api-Version", self.application.version)
-        self.set_header("Server", self.application.server)
+        self.set_header("Api", self.application.config["name"])
+        self.set_header("Api-Version", self.application.config["version"])
+        self.set_header("Server", self.application.config["server"])
 
     def json_encode(self, value):
         return json_encode(value)
