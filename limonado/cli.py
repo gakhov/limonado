@@ -6,7 +6,7 @@ import errno
 import json
 import sys
 
-from .api import run as run_api
+from .web import run as run_api
 from .log import log
 
 __all__ = ["BaseCLI", "run"]
