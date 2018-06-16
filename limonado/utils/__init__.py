@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from collections import Mapping
+import uuid
 
-__all__ = [
-    "merge_defaults"
-]
+__all__ = ["generate_uuid", "join_paths"]
 
 
-def merge_defaults(defaults, destination):
-    """Deep merge defaults into destination.
+def generate_uuid():
+    return uuid.uuid4().hex
 
-    On collision, values from destination will be kept.
 
-    """
-    for key, value in defaults.items():
-        if key not in destination:
-            destination[key] = value
-        elif isinstance(value, Mapping):
-            merge_defaults(value, destination[key])
+def join_paths(*paths):
+    parts = []
+    for path in paths:
+        path = path.strip("/")
+        if path:
+            parts.append("/{}".format(path))
+
+    return "".join(parts)

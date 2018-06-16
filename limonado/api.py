@@ -1,136 +1,93 @@
 # -*- coding: utf-8 -*-
 
-from copy import deepcopy
 import os
+import signal
+import time
 
-import jsonschema
-from tornado.concurrent import futures
-import tornado.ioloop
+from tornado.gen import coroutine
+from tornado.ioloop import IOLoop
 
-from .config import get_default_config
+from . import utils
 from .core.application import Application
-from .core.context import Context
+from .core.api import API
 from .core.handlers import ErrorHandler
-from .utils import merge_defaults
-from .validation import schemas
+from .log import log
 
-__all__ = ["WebAPI"]
+__all__ = ["WebAPI", "run"]
+
+_ENV = os.environ.get("LIMONADO_ENV") or "production"
+_DEBUG = _ENV == "development"
 
 
-class WebAPI:
-    def __init__(self, config=None, objects=None, context_class=Context):
-        if config is None:
-            self.config = {}
-        else:
-            self.config = deepcopy(config)
+def run(api_or_coro,
+        *,
+        port=8000,
+        address="",
+        handle_signals=False,
+        signals=(signal.SIGTERM, ),
+        shutdown_timeout=3.0,
+        **kwargs):
+    loop = IOLoop.current()
+    if callable(api_or_coro):
+        api = loop.run_sync(lambda: api_or_coro(loop))
+    else:
+        api = api_or_coro
 
-        merge_defaults(get_default_config(), self.config)
-        self.objects = objects if objects is not None else {}
-        self.context_class = context_class
-        self._endpoints = {}
+    app = api.get_application(**kwargs)
+    server = app.listen(port, address=address)
+    if handle_signals:
+        _handle_signals(signals, loop, server, shutdown_timeout)
+
+    loop.start()
+
+
+class WebAPI(API):
+    def __init__(self, name, *, version="1", prefix="", debug=_DEBUG):
+        super().__init__()
+        self.name = name
+        self.version = version
+        self.prefix = prefix
+        self.debug = debug
 
     @property
-    def endpoint_names(self):
-        return frozenset(self._endpoints)
+    def base_path(self):
+        return utils.join_paths(self.prefix, "/v{}".format(self.version))
 
-    def add_endpoint(self, endpoint_class, endpoint_kwargs=None):
-        name = endpoint_class.name
-        if not name:
-            raise ValueError("endpoint name must not be None nor empty")
+    def get_application(self):
+        handlers = list(self.iter_handlers(base_path=self.base_path))
+        for handler in handlers:
+            log.info("Endpoint: %s", handler[0])
 
-        if name in self._endpoints:
-            raise ValueError("duplicate endpoint name: {}".format(name))
-
-        self._endpoints[name] = (endpoint_class, endpoint_kwargs or {})
-        return self
-
-    def add_endpoints(self, endpoints):
-        for endpoint in endpoints:
-            try:
-                endpoint_class, endpoint_kwargs = endpoint
-            except ValueError:
-                endpoint_class = endpoint
-                endpoint_kwargs = {}
-
-            self.add_endpoint(endpoint_class, endpoint_kwargs=endpoint_kwargs)
-
-        return self
-
-    def run(self, port=8000, address="", **kwargs):
-        app = self.get_application(**kwargs)
-        app.listen(port, address=address)
-        tornado.ioloop.IOLoop.current().start()
-
-    def get_application(self, enable=None):
-        self._validate_config()
-        endpoints = self._create_endpoints(enable)
-        endpoint_handlers = self._get_endpoint_handlers(endpoints)
+        init_start_time = time.time()
+        IOLoop.current().run_sync(self._initialize_apis)
+        log.info("Initialized in %.1f seconds", time.time() - init_start_time)
         return Application(
-            self.config,
-            handlers=endpoint_handlers,
+            self,
+            handlers=handlers,
             default_handler_class=ErrorHandler,
             default_handler_args={"status_code": 404})
 
-    def _validate_config(self):
-        try:
-            jsonschema.validate(self.config, schemas.CONFIG)
-        except jsonschema.ValidationError as error:
-            raise ValueError(error)
-
-    def _get_api_path(self):
-        return "{base_path}/v{version}/".format(
-            base_path=self.config.get("base_path", "").rstrip("/"),
-            version=self.config["version"])
-
-    def _create_endpoints(self, enable):
-        endpoints = []
-        context = self._create_context()
-        for name, (endpoint_class, endpoint_kwargs) in self._endpoints.items():
-            if enable is None or name in enable:
-                endpoint = endpoint_class(context, **endpoint_kwargs)
-                endpoints.append(endpoint)
-
-        return endpoints
-
-    def _create_context(self):
-        executor = futures.ThreadPoolExecutor((os.cpu_count() or 1) * 5)
-        return self.context_class(self.config, executor, **self.objects)
-
-    def _get_endpoint_handlers(self, endpoints):
-        handlers = []
-        api_path = self._get_api_path()
-        seen = {}
-        for endpoint in endpoints:
-            for handler in _build_endpoint_handlers(endpoint, api_path):
-                path = handler[0]
-                if path in seen:
-                    first_endpoint = seen[path]
-                    raise ValueError("duplicate path '{}' in '{}', "
-                                     "first found in '{}'".format(
-                                         path, endpoint.name,
-                                         first_endpoint.name))
-
-                handlers.append(handler)
-                seen[path] = endpoint
-
-        return handlers
+    @coroutine
+    def _initialize_apis(self):
+        # Traverse the tree of APIs and collect all initializers.
+        initializers = [self.initialize]
+        initializers.extend(
+            api.initialize for api in self.iter_subapis(max_depth=None))
+        # Run initializers in parallel.
+        yield [initializer() for initializer in initializers]
 
 
-def _build_endpoint_handlers(endpoint, api_path):
-    for handler in _iter_handlers(endpoint):
-        try:
-            handler_path, handler_class, handler_kwargs = handler
-        except ValueError:
-            handler_path, handler_class = handler
-            handler_kwargs = {}
+def _handle_signals(signals, loop, server, shutdown_timeout):
+    def handle_signal(signum, frame):
+        log.warning("Signal received: %s", signal.Signals(signum).name)
+        loop.add_callback(shutdown)
 
-        handler_kwargs["endpoint"] = endpoint
-        path = api_path + handler_path.lstrip("/").replace(
-            "{name}", endpoint.name)
-        yield path, handler_class, handler_kwargs
+    def shutdown():
+        # Stop accepting new connections.
+        server.stop()
+        log.warning("Shutting down in %.1f seconds ...", shutdown_timeout)
+        # Give pending tasks some time to finish.
+        loop.add_timeout(time.time() + shutdown_timeout, loop.stop)
 
-
-def _iter_handlers(endpoint):
-    yield from endpoint.handlers
-    for addon in endpoint.iter_addons():
-        yield from addon.handlers
+    for signum in signals:
+        signal.signal(signum, handle_signal)

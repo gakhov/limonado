@@ -4,7 +4,7 @@ import tornado.web
 
 
 class Application(tornado.web.Application):
-    def __init__(self, config, **kwargs):
-        kwargs.setdefault("debug", config["debug"])
+    def __init__(self, api, **kwargs):
+        kwargs.setdefault("debug", api.debug)
         super().__init__(**kwargs)
-        self.config = config
+        self.api = api

@@ -2,9 +2,7 @@
 
 from functools import wraps
 
-__all__ = [
-    "container"
-]
+__all__ = ["container"]
 
 
 def container(dec):
@@ -13,6 +11,7 @@ def container(dec):
     Credits: http://stackoverflow.com/a/1167248/1798683
 
     """
+
     @wraps(dec)
     def meta_decorator(func):
         decorator = dec(func)

@@ -2,12 +2,12 @@
 
 import functools
 import time
+import weakref
 
 from tornado.gen import coroutine
 
-from ..core.endpoint import Endpoint
-from ..core.endpoint import EndpointAddon
-from ..core.endpoint import EndpointHandler
+from ..core.api import API
+from ..core.api import APIHandler
 
 _HEALTH_PARAMS = {
     "additionalProperties": False,
@@ -57,16 +57,12 @@ def cache_health(ttl):
     return decorate
 
 
-class HealthHandler(EndpointHandler):
-    def initialize(self, endpoint, addon):
-        super().initialize(endpoint)
-        self.addon = addon
-
+class HealthHandler(APIHandler):
     @coroutine
     def head(self):
         health = yield self.check_health()
         if health["status"] == "unhealthy":
-            self.set_status(self.addon.unhealthy_status)
+            self.set_status(self.api.unhealthy_status)
 
         self.finish()
 
@@ -74,7 +70,7 @@ class HealthHandler(EndpointHandler):
     def get(self):
         health = yield self.check_health()
         if health["status"] == "unhealthy":
-            self.set_status(self.addon.unhealthy_status)
+            self.set_status(self.api.unhealthy_status)
 
         self.write_json(health)
         self.finish()
@@ -82,32 +78,42 @@ class HealthHandler(EndpointHandler):
     @coroutine
     def check_health(self):
         params = self.get_params(_HEALTH_PARAMS)
-        issues = yield self.addon.check_health(include=params.get("check"))
+        issues = yield self.api.check_health(include=params.get("check"))
         status = "unhealthy" if issues else "healthy"
         return {"status": status, "issues": issues}
 
 
-class HealthAddon(EndpointAddon):
+class HealthAPI(API):
     def __init__(self,
-                 endpoint,
-                 path="{name}/health",
+                 parent=None,
+                 prefix="/health",
                  handler_class=HealthHandler,
                  unhealthy_status=503,
-                 checks=None):
-        super().__init__(endpoint)
-        self._path = path
+                 checks=None,
+                 **kwargs):
+        super().__init__(**kwargs)
+        if parent is None:
+            self._parent = None
+        else:
+            self._parent = weakref.proxy(parent)
+
+        self._prefix = prefix
         self._handler_class = handler_class
         self._unhealthy_status = unhealthy_status
         if checks is None:
             self._checks = {}
         elif callable(checks):
-            self._checks = checks(endpoint)
+            self._checks = checks(self)
         else:
             self._checks = dict(checks)
 
     @property
-    def path(self):
-        return self._path
+    def parent(self):
+        return self._parent
+
+    @property
+    def prefix(self):
+        return self._prefix
 
     @property
     def handler_class(self):
@@ -123,7 +129,7 @@ class HealthAddon(EndpointAddon):
 
     @property
     def handlers(self):
-        return [(self._path, self._handler_class, dict(addon=self))]
+        return [("", self._handler_class)]
 
     @coroutine
     def check_health(self, include=None):
@@ -131,7 +137,7 @@ class HealthAddon(EndpointAddon):
         for name, check in self.checks.items():
             if include is None or name in include:
                 try:
-                    yield check(self.endpoint)
+                    yield check(self)
                 except HealthIssue as issue:
                     issues[name] = {
                         "message": issue.message,
@@ -139,20 +145,6 @@ class HealthAddon(EndpointAddon):
                     }
 
         return issues
-
-
-class HealthEndpoint(Endpoint):
-    name = "health"
-
-    def __init__(self, context, **kwargs):
-        super().__init__(context)
-        kwargs.setdefault("path", "/{name}")
-        kwargs["checks"] = self.checks
-        self.add_addon(HealthAddon, addon_kwargs=kwargs)
-
-    @property
-    def checks(self):
-        return {}
 
 
 class HealthIssue(Exception):

@@ -11,7 +11,7 @@ from ..log import log
 from ..utils.decorators import container
 from ..utils.validators import validate_duration
 
-__all__ = ["format_checker", "validate_response"]
+__all__ = ["format_checker"]
 
 format_checker = jsonschema.FormatChecker()
 
@@ -36,10 +36,10 @@ def validate_response(schema):
             if result is not None:
                 try:
                     jsonschema.validate(
-                        result, schema, format_checker=format_checker)
+                        result, schema, format_checker=self.format_checker)
                 except jsonschema.ValidationError:
                     log.exception("Invalid response")
-                    raise APIError(500, "Invalid response")
+                    raise APIError(500)
 
                 self.write_json(result)
                 self.finish()
@@ -47,23 +47,3 @@ def validate_response(schema):
         return _wrapper
 
     return _validate
-
-
-def validate_request_data(data, schema):
-    try:
-        jsonschema.validate(data, schema, format_checker=format_checker)
-    except jsonschema.ValidationError as error:
-        raise APIError(400, error.message, details=_get_details(error))
-
-
-def _get_details(error):
-    path = ["root"]
-    for item in error.absolute_path:
-        if isinstance(item, int):
-            fmt = "[{}]"
-        else:
-            fmt = ".{}"
-
-        path.append(fmt.format(item))
-
-    return {"path": "".join(path)}

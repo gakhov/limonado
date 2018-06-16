@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from .api import API
+from .api import APIHandler
 from .application import Application
-from .context import Context
-from .endpoint import Endpoint
-from .endpoint import EndpointAddon
-from .endpoint import EndpointHandler
 
 __all__ = [
-    "Application",
-    "Context",
-    "Endpoint",
-    "EndpointAddon",
-    "EndpointHandler"
+    "API",
+    "APIHandler",
+    "Application"
 ]
