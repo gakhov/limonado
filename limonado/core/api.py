@@ -44,7 +44,7 @@ class API(metaclass=APIMeta):
     def iter_subapis(self, *, max_depth=0):
         return self._subapis.iter(max_depth=max_depth)
 
-    def iter_handlers(self, base_path=""):
+    def iter_handlers(self, *, base_path=""):
         handlers = chain.from_iterable([self.handlers, self._extra_handlers])
         for path, handler_class in handlers:
             full_path = utils.join_paths(base_path, path)

@@ -13,7 +13,7 @@ __all__ = ["BaseCLI", "run"]
 
 
 class BaseCLI:
-    def __init__(self, config_loader=json.load):
+    def __init__(self, *, config_loader=json.load):
         self.config_loader = config_loader
 
     def add_arguments(self, parser):
