@@ -1,30 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from argparse import Action
-from argparse import ArgumentError
 from argparse import ArgumentParser
 from argparse import ArgumentTypeError
-import collections
 import errno
 import json
-import logging
 import sys
 
-import tornado.ioloop
+from .web import run as run_api
+from .log import log
 
-__all__ = [
-    "BaseCli",
-    "run_cli"
-]
-
-log = logging.getLogger(__name__)
+__all__ = ["BaseCLI", "run"]
 
 
-class BaseCli:
-
-    def __init__(self, loader=json.load):
-        self.loader = loader
+class BaseCLI:
+    def __init__(self, *, config_loader=json.load):
+        self.config_loader = config_loader
 
     def add_arguments(self, parser):
         pass
@@ -32,119 +22,43 @@ class BaseCli:
     def create_api(self, args):
         raise NotImplementedError
 
-    def run(self):
+    def run(self, **kwargs):
         parser = self.create_parser()
         args = parser.parse_args()
         api = self.create_api(args)
-        settings = args.settings
-        _add_inline_settings(args.inline_settings, settings)
-        api.settings.update(settings)
-        if args.disable:
-            enable = api.endpoint_names - set(args.disable)
-        else:
-            enable = args.enable or None
-
-        port = args.port
-        log.info("Starting server '%s' on port %i", api.settings["id"], port)
+        log.info("Starting server on %s:%i", args.address, args.port)
         try:
-            app = api.get_application(enable=enable)
-            app.listen(port)
-            tornado.ioloop.IOLoop.instance().start()
-        except:
-            log.exception("Failed to start server '%s' on port %i",
-                          api.settings["id"], port)
+            run_api(api, port=args.port, address=args.address, **kwargs)
+        except Exception as exc:
+            log.critical(
+                "Failed to start server on %s:%i",
+                args.address,
+                args.port,
+                exc_info=exc)
             sys.exit(errno.EINTR)
 
     def create_parser(self):
         parser = ArgumentParser()
         parser.add_argument("--port", type=int, default=8000)
-        parser.add_argument("--enable", action="append")
-        parser.add_argument("--disable", action="append")
-        parser.add_argument("--settings", type=_SettingsType(self.loader),
-                            default={})
-        parser.add_argument("--set", dest="inline_settings",
-                            action=_AppendSettingAction, default=[])
+        parser.add_argument("--address", default="")
+        parser.add_argument(
+            "--config",
+            metavar="PATH",
+            type=_ConfigType(self.config_loader),
+            default={})
         self.add_arguments(parser)
         return parser
 
 
-def run_cli(api, **kwargs):
-    class Cli(BaseCli):
-        def create_api(self):
+def run(api, cli_kwargs=None, **kwargs):
+    class CLI(BaseCLI):
+        def create_api(self, args):
             return api
 
-    Cli(**kwargs).run()
+    CLI(**(cli_kwargs or {})).run(**kwargs)
 
 
-def _add_inline_settings(inline_settings, settings):
-    for path, value in inline_settings:
-        keys = path.split(".")
-        current = settings
-        for key in keys[:-1]:
-            current = current.setdefault(key, {})
-
-        current[keys[-1]] = value
-
-
-def _parse_inline_value(string):
-    string = string.strip()
-    if _is_unqouted_string(string):
-        string = '"{}"'.format(string)
-
-    return json.loads(string)
-
-
-def _is_unqouted_string(string):
-    if (string.startswith(('"', "{", "[")) or
-            string in ("null", "true", "false")):
-        return False
-
-    for factory in (float, int):
-        try:
-            factory(string)
-        except ValueError:
-            pass
-        else:
-            return False
-
-    return True
-
-
-class _AppendSettingAction(Action):
-
-    def __init__(self,
-                 option_strings,
-                 dest,
-                 default=None,
-                 required=False,
-                 help=None,
-                 metavar=None):
-        super(_AppendSettingAction, self).__init__(
-            option_strings=option_strings,
-            dest=dest,
-            nargs=2,
-            default=default,
-            required=required,
-            help=help,
-            metavar=metavar)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        name, raw_value = values
-        try:
-            value = _parse_inline_value(raw_value)
-        except ValueError as error:
-            raise ArgumentError(self, "bad value: {}".format(error))
-
-        items = getattr(namespace, self.dest, None)
-        if items is None:
-            items = []
-
-        items.append((name, value))
-        setattr(namespace, self.dest, items)
-
-
-class _SettingsType(object):
-
+class _ConfigType:
     def __init__(self, loader):
         self.loader = loader
 
@@ -154,20 +68,17 @@ class _SettingsType(object):
         except OSError:
             raise ArgumentTypeError("can't open '{}'".format(path))
         else:
-            settings = self._load(handle)
+            config = self._load(handle)
             handle.close()
-            return settings
+            return config
 
     def _load(self, handle):
         try:
-            settings = self.loader(handle)
+            config = self.loader(handle)
         except Exception as exc:
-            raise ArgumentTypeError("can't load settings: {}".format(exc))
+            raise ArgumentTypeError("can't load config: {}".format(exc))
         else:
-            if not isinstance(settings, collections.Mapping):
-                raise ArgumentTypeError("settings must be a mapping")
-
-            return settings
+            return config
 
     def __repr__(self):
         return "{}()".format(self.__class__.__name__)
