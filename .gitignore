@@ -18,7 +18,10 @@ eggs/
 lib/
 lib64/
 parts/
-sdist/
+/sdist/
+/bin/
+/include/
+/share/
 var/
 wheels/
 *.egg-info/
