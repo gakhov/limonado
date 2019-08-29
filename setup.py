@@ -17,6 +17,8 @@ def setup_package():
         name="limonado",
         packages=[
             "limonado",
+            "limonado.contrib",
+            "limonado.core",
             "limonado.utils",
             "limonado.validation"
         ],

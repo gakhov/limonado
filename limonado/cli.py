@@ -11,18 +11,12 @@ import json
 import logging
 import sys
 
-import tornado.ioloop
-
-__all__ = [
-    "BaseCli",
-    "run_cli"
-]
+__all__ = ["BaseCli", "run"]
 
 log = logging.getLogger(__name__)
 
 
 class BaseCli:
-
     def __init__(self, loader=json.load):
         self.loader = loader
 
@@ -44,33 +38,35 @@ class BaseCli:
         else:
             enable = args.enable or None
 
-        port = args.port
-        log.info("Starting server '%s' on port %i", api.settings["id"], port)
+        log.info("Starting server '%s' on %s:%i", api.settings["id"],
+                 args.address, args.port)
         try:
-            app = api.get_application(enable=enable)
-            app.listen(port)
-            tornado.ioloop.IOLoop.instance().start()
+            api.run(port=args.port, address=args.address, enable=enable)
         except:
-            log.exception("Failed to start server '%s' on port %i",
-                          api.settings["id"], port)
+            log.exception("Failed to start server '%s' on %s:%i",
+                          api.settings["id"], args.address, args.port)
             sys.exit(errno.EINTR)
 
     def create_parser(self):
         parser = ArgumentParser()
         parser.add_argument("--port", type=int, default=8000)
+        parser.add_argument("--address", default="")
         parser.add_argument("--enable", action="append")
         parser.add_argument("--disable", action="append")
-        parser.add_argument("--settings", type=_SettingsType(self.loader),
-                            default={})
-        parser.add_argument("--set", dest="inline_settings",
-                            action=_AppendSettingAction, default=[])
+        parser.add_argument(
+            "--settings", type=_SettingsType(self.loader), default={})
+        parser.add_argument(
+            "--set",
+            dest="inline_settings",
+            action=_AppendSettingAction,
+            default=[])
         self.add_arguments(parser)
         return parser
 
 
-def run_cli(api, **kwargs):
+def run(api, **kwargs):
     class Cli(BaseCli):
-        def create_api(self):
+        def create_api(self, args):
             return api
 
     Cli(**kwargs).run()
@@ -95,8 +91,8 @@ def _parse_inline_value(string):
 
 
 def _is_unqouted_string(string):
-    if (string.startswith(('"', "{", "[")) or
-            string in ("null", "true", "false")):
+    if (string.startswith(('"', "{", "["))
+            or string in ("null", "true", "false")):
         return False
 
     for factory in (float, int):
@@ -111,7 +107,6 @@ def _is_unqouted_string(string):
 
 
 class _AppendSettingAction(Action):
-
     def __init__(self,
                  option_strings,
                  dest,
@@ -143,8 +138,7 @@ class _AppendSettingAction(Action):
         setattr(namespace, self.dest, items)
 
 
-class _SettingsType(object):
-
+class _SettingsType:
     def __init__(self, loader):
         self.loader = loader
 
