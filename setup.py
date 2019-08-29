@@ -40,16 +40,11 @@ def setup_package():
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
         ],
-        requires=[
-            "jsonschema",
-            "dateutil",
-            "strict_rfc3339",
-            "tornado"
-        ],
+        python_requires='>=3.4',
         install_requires=[
-            "jsonschema==2.5.1",
-            "python-dateutil>=2.5,<2.6",
-            "strict_rfc3339==0.5",
+            "jsonschema>=2.5.1,<3.0",
+            "python-dateutil>=2.5,<3.0",
+            "strict_rfc3339>=0.5,<0.8",
             "tornado>=5.0,<6.0"
         ]
     )
